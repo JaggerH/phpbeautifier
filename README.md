@@ -4,9 +4,8 @@ This repository is from Sublime Text 3 - CodeFormatter.
 The PHP-Beautifier fix the Bug in official repository.
 Official repository have problem to format array in square brackets.
 
-----------------------------------------------------------
-------------------       Example        ------------------ 
-----------------------------------------------------------
+# Example
+
 
 The array before format is:
 

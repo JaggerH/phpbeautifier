@@ -39,6 +39,10 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
     public function t_open_square_brace( $sTag ) {
         
         $this->square_count++;
+
+        if ( !$this->oBeaut->isNextTokenConstant(T_CLOSE_SQUARE_BRACE) && $this->oBeaut->isNextTokenConstant(T_VARIABLE) ) {
+            $sTag = $sTag . ' ' ;
+        }
         
         if( $this->oBeaut->isNextTokenConstant( ']',2 ) ) {
             $this->oBeaut->add( $sTag );
@@ -49,17 +53,6 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
             $this->oBeaut->incIndent();
             $this->oBeaut->addIndent();
         }
-        
-        // if ( !$this->oBeaut->isNextTokenConstant(T_CLOSE_SQUARE_BRACE) && $this->oBeaut->isNextTokenConstant(T_VARIABLE) ) {
-        
-        //     $this->oBeaut->add( $sTag . ' ' );
-        
-        // }else{
-        
-        //     return BYPASS;
-        
-        // }
-        
         
     }
     
@@ -76,28 +69,19 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
         
         $this->square_count--;
         
+        if( !$this->oBeaut->isPreviousTokenConstant( T_OPEN_SQUARE_BRACE ) && $this->oBeaut->isPreviousTokenConstant( T_VARIABLE ) ) {
+            $sTag = ' ' . $sTag;
+        }
+        
         if( $this->oBeaut->isPreviousTokenConstant( '[',2 ) ) {
             $this->oBeaut->add( $sTag );
         } 
         else {
-            
             $this->oBeaut->addNewLine();
             $this->oBeaut->decIndent();
             $this->oBeaut->addIndent();
             $this->oBeaut->add( $sTag );
         }
-        
-        // if ( !$this->oBeaut->isPreviousTokenConstant(T_OPEN_SQUARE_BRACE) && $this->oBeaut->isPreviousTokenConstant(T_VARIABLE) ) {
-        
-        //     $this->oBeaut->add( ' '. $sTag );
-        
-        // }else{
-        
-        //     return BYPASS;
-        
-        // }
-        
-        
     }
     
     public function t_comma( $sTag ) {
@@ -118,16 +102,5 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
         else {
             $this->oBeaut->add( $sTag );
         }
-        
-        // if( $this->oBeaut->isNextTokenConstant( T_CLOSE_SQUARE_BRACE ) ) {
-        //     $this->oBeaut->add( $sTag );
-        // }
-        // else {
-        //     $this->oBeaut->add( $sTag );
-        //     $this->oBeaut->addNewLine();
-        //     $this->oBeaut->addIndent();
-        // }
-        
-        
     }
 }

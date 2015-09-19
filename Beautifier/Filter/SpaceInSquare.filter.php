@@ -24,6 +24,9 @@
 
 class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
     
+    private $square_count = 0;
+    private $comma_in_square = 0;
+    
     /**
      * t_open_square_brace
      *
@@ -35,15 +38,16 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
     
     public function t_open_square_brace( $sTag ) {
         
-        if( !$this->oBeaut->isNextTokenConstant( T_CLOSE_SQUARE_BRACE ) ) {
-            
+        $this->square_count++;
+        
+        if( $this->oBeaut->isNextTokenConstant( ']',2 ) ) {
+            $this->oBeaut->add( $sTag );
+        } 
+        else {
             $this->oBeaut->add( $sTag );
             $this->oBeaut->addNewLine();
             $this->oBeaut->incIndent();
             $this->oBeaut->addIndent();
-        } 
-        else {
-            return BYPASS;
         }
         
         // if ( !$this->oBeaut->isNextTokenConstant(T_CLOSE_SQUARE_BRACE) && $this->oBeaut->isNextTokenConstant(T_VARIABLE) ) {
@@ -70,15 +74,17 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
     
     public function t_close_square_brace( $sTag ) {
         
-        if( !$this->oBeaut->isNextTokenConstant( T_OPEN_SQUARE_BRACE ) ) {
+        $this->square_count--;
+        
+        if( $this->oBeaut->isPreviousTokenConstant( '[',2 ) ) {
+            $this->oBeaut->add( $sTag );
+        } 
+        else {
             
             $this->oBeaut->addNewLine();
             $this->oBeaut->decIndent();
             $this->oBeaut->addIndent();
             $this->oBeaut->add( $sTag );
-        } 
-        else {
-            return BYPASS;
         }
         
         // if ( !$this->oBeaut->isPreviousTokenConstant(T_OPEN_SQUARE_BRACE) && $this->oBeaut->isPreviousTokenConstant(T_VARIABLE) ) {
@@ -95,14 +101,33 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
     }
     
     public function t_comma( $sTag ) {
-        
-        if( $this->oBeaut->isNextTokenConstant( T_CLOSE_SQUARE_BRACE ) ) {
+        if( $this->oBeaut->isPreviousTokenConstant( ']' ) ) {
             $this->oBeaut->add( $sTag );
+            if( !$this->oBeaut->isNextTokenConstant( ']' ) ) {
+                $this->oBeaut->addNewLine();
+                $this->oBeaut->addIndent();
+            }
+        } 
+        else if( $this->square_count > 0 ) {
+            $this->oBeaut->add( $sTag );
+            if( !$this->oBeaut->isNextTokenConstant( ']' ) ) {
+                $this->oBeaut->addNewLine();
+                $this->oBeaut->addIndent();
+            }
         } 
         else {
             $this->oBeaut->add( $sTag );
-            $this->oBeaut->addNewLine();
-            $this->oBeaut->addIndent();
         }
+        
+        // if( $this->oBeaut->isNextTokenConstant( T_CLOSE_SQUARE_BRACE ) ) {
+        //     $this->oBeaut->add( $sTag );
+        // }
+        // else {
+        //     $this->oBeaut->add( $sTag );
+        //     $this->oBeaut->addNewLine();
+        //     $this->oBeaut->addIndent();
+        // }
+        
+        
     }
 }

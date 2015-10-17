@@ -26,34 +26,73 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
     
     private $square_count = 0;
     private $comma_in_square = 0;
+    private $len_in_square = 0;
+    private $var_in_square = 0;
+    private $find_close_square = false;
     
     /**
      * t_open_square_brace
+     * 每个开中括号都需开启一个判定条件while
+     * 如果到下一个中括号的之间的长度大于80，则按换行开始
+     * 如果小于80，则全部添加到一行
      *
      * @param mixed $sTag The tag to be procesed
      *
      * @access public
      * @return void
+     *
      */
     
-    public function t_open_square_brace( $sTag ) {
+    public function t_open_square_brace($sTag) {
         
         $this->square_count++;
-
-        if ( !$this->oBeaut->isNextTokenConstant(T_CLOSE_SQUARE_BRACE) && $this->oBeaut->isNextTokenConstant(T_VARIABLE) ) {
-            $sTag = $sTag . ' ' ;
+        
+        if (!$this->oBeaut->isNextTokenConstant(T_CLOSE_SQUARE_BRACE) && $this->oBeaut->isNextTokenConstant(T_VARIABLE)) {
+            $sTag = $sTag . ' ';
         }
         
-        if( $this->oBeaut->isNextTokenConstant( ']',2 ) ) {
-            $this->oBeaut->add( $sTag );
+
+        
+        //while i计数，终止条件是中间的字符串长度总和大于80，或者在长度小于80时遇到闭括号
+        while ($this->len_in_square < 40) {
+            //如果下一个变量是开括号，换行，return
+            if ($this->oBeaut->isNextTokenConstant('[')) {
+                $this->var_in_square = 0;
+                $this->len_in_square = 0;
+                $this->find_close_square = false;
+                break;
+            }
+            if ($this->oBeaut->isNextTokenContent(']',$this->var_in_square + 1)) {
+                $this->find_close_square = true;
+                break;
+            }
+            
+            $this->len_in_square+= strlen($this->oBeaut->getNextTokenContent($this->var_in_square + 1));
+            $this->var_in_square++;
+        }
+        
+        //设置一个变量，如果该变量为真，将square中的变量输入一行
+        if ($this->find_close_square) {
+            $this->oBeaut->add($sTag);
         } 
         else {
-            $this->oBeaut->add( $sTag );
+            $this->oBeaut->add($sTag);
             $this->oBeaut->addNewLine();
             $this->oBeaut->incIndent();
             $this->oBeaut->addIndent();
         }
         
+        /*
+        if( $this->oBeaut->isNextTokenConstant( ']',2 ) ) {
+            $this->oBeaut->add( $sTag );
+        } 
+        else {
+            $this->oBeaut->add( $sTag );
+            $this->oBeaut->add($this->oBeaut->getNextTokenContent()));
+            $this->oBeaut->addNewLine();
+            $this->oBeaut->incIndent();
+            $this->oBeaut->addIndent();
+        }*/
     }
     
     /**
@@ -65,42 +104,42 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
      * @return void
      */
     
-    public function t_close_square_brace( $sTag ) {
+    public function t_close_square_brace($sTag) {
         
         $this->square_count--;
         
-        if( !$this->oBeaut->isPreviousTokenConstant( T_OPEN_SQUARE_BRACE ) && $this->oBeaut->isPreviousTokenConstant( T_VARIABLE ) ) {
+        if (!$this->oBeaut->isPreviousTokenConstant(T_OPEN_SQUARE_BRACE) && $this->oBeaut->isPreviousTokenConstant(T_VARIABLE)) {
             $sTag = ' ' . $sTag;
         }
         
-        if( $this->oBeaut->isPreviousTokenConstant( '[',2 ) ) {
-            $this->oBeaut->add( $sTag );
+        if ($this->find_close_square) {
+            $this->oBeaut->add($sTag);
         } 
         else {
             $this->oBeaut->addNewLine();
             $this->oBeaut->decIndent();
             $this->oBeaut->addIndent();
-            $this->oBeaut->add( $sTag );
+            $this->oBeaut->add($sTag);
         }
+        
+        $this->var_in_square = 0;
+        $this->len_in_square = 0;
+        $this->find_close_square = false;
     }
     
-    public function t_comma( $sTag ) {
-        if( $this->oBeaut->isPreviousTokenConstant( ']' ) ) {
-            $this->oBeaut->add( $sTag );
-            if( !$this->oBeaut->isNextTokenConstant( ']' ) ) {
-                $this->oBeaut->addNewLine();
-                $this->oBeaut->addIndent();
-            }
+    public function t_comma($sTag) {
+        if ($this->find_close_square) {
+            $this->oBeaut->add($sTag);
         } 
-        else if( $this->square_count > 0 ) {
-            $this->oBeaut->add( $sTag );
-            if( !$this->oBeaut->isNextTokenConstant( ']' ) ) {
+        else if ($this->square_count > 0) {
+            $this->oBeaut->add($sTag);
+            if (!$this->oBeaut->isNextTokenConstant(']')) {
                 $this->oBeaut->addNewLine();
                 $this->oBeaut->addIndent();
             }
         } 
         else {
-            $this->oBeaut->add( $sTag );
+            $this->oBeaut->add($sTag);
         }
     }
 }

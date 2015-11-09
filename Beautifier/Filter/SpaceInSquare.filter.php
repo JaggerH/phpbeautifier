@@ -1,7 +1,5 @@
 <?php
-
 /* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
-
 /**
  * Space in Square: Add padding spaces within square brackets if contains a variable, ie. [ $a ],["key"],[]
  *
@@ -25,7 +23,9 @@
 class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
     
     private $square_count = 0;
-    private $output_in_line = false;
+    private $array_output_in_line = false;
+    private $is_in_array = 0; //$is_in_array > 0 is in array, $is_in_array = 0 is not in array
+    
     
     /**
      * t_open_square_brace
@@ -42,38 +42,35 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
     
     public function t_open_square_brace($sTag) {
         
+        $this->is_in_array++;
+        
         if (!$this->oBeaut->isNextTokenConstant(T_CLOSE_SQUARE_BRACE) && $this->oBeaut->isNextTokenConstant(T_VARIABLE)) {
             $sTag = $sTag . ' ';
         }
-        
-        //如果当前括号输入output_in_line的范围，则不再重复计算直接输出
-        if (!$this->output_in_line) {
+        //如果当前括号输入array_output_in_line的范围，则不再重复计算直接输出
+        if (!$this->array_output_in_line) {
             $index = 1;
             $strlen_in_square = 0;
             $square_count_temp = 1;
             $this->square_count = 1;
-            
             //while i计数，终止条件是中间的字符串长度总和大于80，或者在长度小于80时遇到闭括号
-            while ($strlen_in_square <= 40) {
-                if ($this->oBeaut->isNextTokenConstant('[',
-                $index)) {
+            while ($strlen_in_square <= 80) {
+                if ($this->oBeaut->isNextTokenConstant('[', $index)) {
                     $square_count_temp++;
                     $this->square_count++;
                 }
-                if ($this->oBeaut->isNextTokenConstant(']',
-                $index)) {
+                if ($this->oBeaut->isNextTokenConstant(']', $index)) {
                     $square_count_temp--;
                     if ($square_count_temp == 0) {
-                        $this->output_in_line = true;
+                        $this->array_output_in_line = true;
                         break;
                     }
                 }
                 $strlen_in_square+= strlen($this->oBeaut->getNextTokenContent($index++));
             }
         }
-        
         //设置一个变量，如果该变量为真，将square中的变量输入一行
-        if ($this->output_in_line) {
+        if ($this->array_output_in_line) {
             $this->oBeaut->add($sTag);
         } 
         else {
@@ -83,7 +80,6 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
             $this->oBeaut->addIndent();
         }
     }
-    
     /**
      * t_close_square_brace
      *
@@ -95,13 +91,15 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
     
     public function t_close_square_brace($sTag) {
         
+        $this->is_in_array--;
+        
         if (!$this->oBeaut->isPreviousTokenConstant(T_OPEN_SQUARE_BRACE) && $this->oBeaut->isPreviousTokenConstant(T_VARIABLE)) {
             $sTag = ' ' . $sTag;
         }
         
         $this->square_count--;
         
-        if ($this->output_in_line) {
+        if ($this->array_output_in_line) {
             $this->oBeaut->add($sTag);
         } 
         else {
@@ -111,20 +109,21 @@ class PHP_Beautifier_Filter_SpaceInSquare extends PHP_Beautifier_Filter {
             $this->oBeaut->add($sTag);
         }
         
-        if ($this->output_in_line) {
+        if ($this->array_output_in_line) {
             if ($this->square_count == 0) {
-                $this->output_in_line = false;
+                $this->array_output_in_line = false;
             }
         }
     }
     
     public function t_comma($sTag) {
-        if ($this->output_in_line) {
-            $this->oBeaut->add($sTag);
+        if ($this->array_output_in_line) {
+            $this->oBeaut->add($sTag . ' ');
         } 
         else {
-            $this->oBeaut->add($sTag);
-            if (!$this->oBeaut->isNextTokenConstant(']')) {
+            $this->oBeaut->add($sTag . ' ');
+            if ($this->oBeaut->isNextTokenConstant("]")) return;
+            if ($this->is_in_array > 0) {
                 $this->oBeaut->addNewLine();
                 $this->oBeaut->addIndent();
             }

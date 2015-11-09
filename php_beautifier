@@ -67,7 +67,8 @@
     $oLog = PHP_Beautifier_Common::getLog();
 
     function CFLog($text) {
-        $path = '/home/longman/.config/sublime-text-3/Packages/CodeFormatter/codeformatter/lib/phpbeautifier/php.log';
+        // $path = '/home/longman/.config/sublime-text-3/Packages/CodeFormatter/codeformatter/lib/phpbeautifier/php.log';
+        $path = '/tmp/php.log';
         file_put_contents($path, print_r($text, true)."\n", FILE_APPEND);
     }
 
@@ -224,6 +225,7 @@
                 $oBeaut->addFilterDirectory($sDirectory);
             }
         }
+        CFLog(json_encode($aFilters));
         if ($aFilters) {
             foreach($aFilters as $sName=>$aArgs) {
                 $oBeaut->addFilter($sName, $aArgs);
